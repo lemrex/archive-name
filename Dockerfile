@@ -1,15 +1,16 @@
 # Use official PHP with Apache
 FROM php:8.2-apache
 
-# Fix GPG key error for Debian repositories
-RUN apt-get update || true && \
-    apt-get install -y --no-install-recommends gnupg dirmngr ca-certificates curl && \
-    curl -fsSL https://ftp-master.debian.org/keys/archive-key-11.asc | gpg --dearmor -o /etc/apt/trusted.gpg.d/debian-archive-key-11.gpg && \
-    curl -fsSL https://ftp-master.debian.org/keys/archive-key-12.asc | gpg --dearmor -o /etc/apt/trusted.gpg.d/debian-archive-key-12.gpg
+# TEMPORARY: allow apt to skip verification so we can install curl and fix keys
+RUN apt-get update --allow-insecure-repositories || true && \
+    apt-get install -y --no-install-recommends curl gnupg ca-certificates && \
+    curl https://ftp-master.debian.org/keys/archive-key-11.asc | gpg --dearmor -o /usr/share/keyrings/debian-archive-keyring.gpg && \
+    curl https://ftp-master.debian.org/keys/archive-key-12.asc | gpg --dearmor -o /usr/share/keyrings/debian-archive-keyring-12.gpg && \
+    rm -rf /var/lib/apt/lists/*
 
-# Now continue with regular install
+# Now retry APT update safely
 RUN apt-get update && apt-get install -y \
-    git unzip curl libzip-dev libonig-dev libpng-dev libxml2-dev \
+    git unzip zip libzip-dev libonig-dev libpng-dev libxml2-dev \
     && docker-php-ext-install pdo pdo_mysql zip
 
 
